@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分析结果 - GeneInsight</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .result-card {
+            border-left: 4px solid #0d6efd;
+        }
+        .interpretation-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+        }
+        .sequence-display {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .nucleotide-progress {
+            height: 8px;
+        }
+        .interpretation-text {
+            white-space: pre-line; /* 这个属性会自动处理换行符 */
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+<!-- 导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">
+            <i class="fas fa-dna"></i> GeneInsight
+        </a>
+        <a th:href="@{/}" class="btn btn-outline-light">
+            <i class="fas fa-arrow-left me-2"></i>返回分析
+        </a>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <!-- 错误显示 -->
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <span th:text="${error}"></span>
+    </div>
+
+    <!-- 结果展示 -->
+    <div th:if="${result}">
+        <!-- 标题 -->
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="text-primary">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    分析结果: <span th:text="${result.geneName}"></span>
+                </h2>
+                <p class="text-muted">物种: <span th:text="${result.species}"></span></p>
+            </div>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card result-card">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">序列长度</h6>
+                        <h3 th:text="${result.sequenceLength} + ' bp'" class="text-primary"></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card result-card">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">GC含量</h6>
+                        <h3 th:text="${#numbers.formatDecimal(result.gcContent, 1, 2)} + ' %'" class="text-success"></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card result-card">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">预测蛋白质</h6>
+                        <h3 th:text="${result.potentialProteins.size()}" class="text-warning"></h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核苷酸组成 -->
+        <div class="row mb-4" th:if="${result.nucleotideComposition != null and !result.nucleotideComposition.isEmpty()}">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>核苷酸组成</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div th:each="entry : ${result.nucleotideComposition}" class="col-md-3 col-6 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong th:text="${entry.key}">核苷酸</strong>
+                                    <span th:text="${entry.value}" class="badge bg-primary">数量</span>
+                                </div>
+                                <div class="progress nucleotide-progress mt-1">
+                                    <div class="progress-bar"
+                                         th:style="'width: ' + ${entry.value * 100 / result.sequenceLength} + '%;'"
+                                         role="progressbar"
+                                         th:attr="aria-valuenow=${entry.value * 100 / result.sequenceLength}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能分析 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>功能分析</h5>
+                    </div>
+                    <div class="card-body">
+                        <p th:text="${result.functionalAnalysis}" class="card-text">功能分析内容将显示在这里</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>疾病关联</h5>
+                    </div>
+                    <div class="card-body">
+                        <p th:text="${result.diseaseAssociations}" class="card-text">疾病关联分析将显示在这里</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 大语言模型解释 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card interpretation-card">
+                    <div class="card-header bg-warning bg-opacity-25">
+                        <h5 class="mb-0">
+                            <i class="fas fa-robot me-2"></i>AI智能解读
+                            <span th:if="${!apiAvailable}" class="badge bg-secondary ms-2">模拟响应</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="interpretation-text" th:text="${result.llmInterpretation}">
+                            大语言模型的解释将显示在这里
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预测的蛋白质序列 -->
+        <div class="row mb-4" th:if="${result.potentialProteins != null and result.potentialProteins.size() > 0}">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-barcode me-2"></i>预测的蛋白质编码区域</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:each="protein, iter : ${result.potentialProteins}" class="mb-3">
+                            <h6>ORF <span th:text="${iter.index + 1}">1</span>
+                                <small class="text-muted">(长度: <span th:text="${protein.length()}">0</span> bp)</small>
+                            </h6>
+                            <div class="sequence-display">
+                                <span th:text="${protein}">蛋白质序列将显示在这里</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 返回按钮 -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a th:href="@{/}" class="btn btn-primary btn-lg">
+                <i class="fas fa-redo me-2"></i>分析新基因
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 页脚 -->
+<footer class="bg-dark text-light py-4 mt-5">
+    <div class="container text-center">
+        <p class="mb-0">&copy; 2024 GeneInsight - 基因功能智能分析平台</p>
+    </div>
+</footer>
+
+<!-- 脚本 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

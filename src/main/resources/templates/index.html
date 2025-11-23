@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeneInsight - 基因功能智能分析平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 0.75rem;
+        }
+        .sequence-input {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .form-select {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+            transition: all 0.2s ease-in-out;
+        }
+        .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            background-color: white;
+        }
+        .custom-option {
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+<body>
+<!-- 导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-dna"></i> GeneInsight
+        </a>
+    </div>
+</nav>
+
+<!-- 英雄区域 -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold">基因功能智能分析平台</h1>
+                <p class="lead">结合生物信息学与大语言模型，深度解析基因功能与临床意义</p>
+                <div class="mt-4">
+                    <span class="badge bg-light text-dark me-2">生物信息学</span>
+                    <span class="badge bg-light text-dark me-2">AI分析</span>
+                    <span class="badge bg-light text-dark">基因解读</span>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <i class="fas fa-dna" style="font-size: 8rem; opacity: 0.8;"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 分析表单 -->
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-microscope me-2"></i>基因序列分析</h4>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/analyze}" method="post" th:object="${geneAnalysisRequest}">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="geneName" class="form-label">
+                                    <i class="fas fa-dna me-1"></i>基因名称
+                                </label>
+                                <select class="form-select" id="geneName" th:field="*{geneName}" required>
+                                    <option value="">-- 请选择基因 --</option>
+                                    <option th:each="gene : ${geneAnalysisRequest.predefinedGenes}"
+                                            th:value="${gene}"
+                                            th:text="${gene}">
+                                    </option>
+                                    <option value="custom_gene">-- 其他基因（手动输入）--</option>
+                                </select>
+                                <div id="customGeneInput" class="mt-2" style="display: none;">
+                                    <input type="text" class="form-control" id="customGene"
+                                           placeholder="请输入基因名称">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="species" class="form-label">
+                                    <i class="fas fa-paw me-1"></i>物种
+                                </label>
+                                <select class="form-select" id="species" th:field="*{species}" required>
+                                    <option value="">-- 请选择物种 --</option>
+                                    <option th:each="specie : ${geneAnalysisRequest.predefinedSpecies}"
+                                            th:value="${specie}"
+                                            th:text="${specie}">
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="geneSequence" class="form-label">
+                                <i class="fas fa-code me-1"></i>基因序列 (DNA)
+                            </label>
+                            <textarea class="form-control sequence-input" id="geneSequence"
+                                      th:field="*{geneSequence}" rows="8"
+                                      placeholder="输入DNA序列 (仅包含A,T,G,C)，例如: ATGCCGTA..."
+                                      required></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                请输入纯DNA序列，不包含空格或特殊字符。序列长度建议在100-10000个碱基之间。
+                            </div>
+                        </div>
+
+                        <!-- 示例序列按钮 -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-vial me-1"></i>快速示例
+                            </label>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm me-2"
+                                        onclick="loadExample('BRCA1')">
+                                    BRCA1 示例序列
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm me-2"
+                                        onclick="loadExample('TP53')">
+                                    TP53 示例序列
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        onclick="loadExample('EGFR')">
+                                    EGFR 示例序列
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info" th:if="${!apiAvailable}">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>提示:</strong> 当前使用模拟的大语言模型响应。要启用真实的AI分析，请在application.properties中配置DeepSeek API密钥。
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-play-circle me-2"></i>开始分析
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 功能特性 -->
+            <div class="row mt-5">
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="feature-icon bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center mb-3">
+                            <i class="fas fa-dna fa-2x"></i>
+                        </div>
+                        <h5>序列分析</h5>
+                        <p class="text-muted">计算GC含量、核苷酸组成、预测开放阅读框</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="feature-icon bg-success bg-opacity-10 text-success d-inline-flex align-items-center justify-content-center mb-3">
+                            <i class="fas fa-stethoscope fa-2x"></i>
+                        </div>
+                        <h5>功能预测</h5>
+                        <p class="text-muted">基于序列特征进行功能分析和疾病关联预测</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="feature-icon bg-warning bg-opacity-10 text-warning d-inline-flex align-items-center justify-content-center mb-3">
+                            <i class="fas fa-robot fa-2x"></i>
+                        </div>
+                        <h5>AI解读</h5>
+                        <p class="text-muted">大语言模型提供通俗易懂的生物学解释</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 页脚 -->
+<footer class="bg-dark text-light py-4 mt-5">
+    <div class="container text-center">
+        <p class="mb-0">&copy; 2024 GeneInsight - 基因功能智能分析平台</p>
+    </div>
+</footer>
+
+<!-- 脚本 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 处理自定义基因输入
+    document.getElementById('geneName').addEventListener('change', function() {
+        const customInput = document.getElementById('customGeneInput');
+        if (this.value === 'custom_gene') {
+            customInput.style.display = 'block';
+        } else {
+            customInput.style.display = 'none';
+        }
+    });
+
+    // 表单提交前处理自定义基因
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const geneSelect = document.getElementById('geneName');
+        const customInput = document.getElementById('customGene');
+
+        if (geneSelect.value === 'custom_gene' && customInput.value.trim() !== '') {
+            // 创建隐藏字段来传递自定义基因名称
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'geneName';
+            hiddenInput.value = customInput.value.trim();
+            this.appendChild(hiddenInput);
+        }
+    });
+
+    // 示例序列加载函数
+    function loadExample(geneType) {
+        const examples = {
+            'BRCA1': 'ATGGATTTATCTGCTCTTCGCGTTGAAGAAGTACAAAATGTCATTAATGCTATGCAGAAAATCTTAGAGTGTCCCATCTGTCTGGAGTTGATCAAGGAACCTGTCTCCACAAAGTGTGACCACATATTTTGCAAATTTTGCATGCTGAAACTTCTCAACCAGAAGAAAGGGCCTTCACAGTGTCCTTTATGTAAGAATGATATAACCAAAAGGAGCCTACAAGAAAGTACGAGATTTAGTCAAACTTGATGAAGCTAAAAATTATCTCCAGAAACAAG',
+            'TP53': 'ATGGAGGAGCCGCAGTCAGATCCTAGCGTCGAGCCCCCTCTGAGTCAGGAAACATTTTCAGACCTATGGAAACTACTTCCTGAAAACAACGTTCTGTCCCCCTTGCCGTCCCAAGCAATGGATGATTTGATGCTGTCCCCGGACGATATTGAACAATGGTTCACTGAAGACCCAGGTCCAGATGAAGCTCCCAGAATGCCAGAGGCTGCTCCCCCCGTGGCCCCTGCACCAGCAGCTCCTACACCGGCGGCCCCTGCACCAGCCCCCTCCTGGCCCCTGTCATCTTCT',
+            'EGFR': 'ATGCGACCCTCCGGGACGGCCGGGGGAGCAGCGCTGCTGGGGGCGGGGGGGCTGGCGGCCGCGGCCGGGGCGGGGGCGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGG'
+        };
+
+        document.getElementById('geneSequence').value = examples[geneType] || '';
+
+        // 自动选择对应的基因
+        const geneSelect = document.getElementById('geneName');
+        for (let i = 0; i < geneSelect.options.length; i++) {
+            if (geneSelect.options[i].value === geneType) {
+                geneSelect.selectedIndex = i;
+                break;
+            }
+        }
+
+        // 自动选择人类物种
+        const speciesSelect = document.getElementById('species');
+        for (let i = 0; i < speciesSelect.options.length; i++) {
+            if (speciesSelect.options[i].text.includes('人类')) {
+                speciesSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+</script>
+</body>
+</html>
